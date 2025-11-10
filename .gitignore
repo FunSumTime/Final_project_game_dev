@@ -1,0 +1,60 @@
+# --- Unity: keep only source dirs ---
+# Keep these (add them explicitly below when you git add):
+#   Assets/
+#   ProjectSettings/
+#   Packages/
+
+# Generated caches (NEVER commit)
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Mm]emoryCaptures/
+UserSettings/
+.gradle/
+sysinfo.txt
+
+# Burst / IL2CPP / Rider / VS caches
+[Bb]ee/
+*.csproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+.vs/
+.vscode/
+.idea/
+
+# Platform-specific junk
+.DS_Store
+Thumbs.db
+
+# Crash/Profiler
+*.stacktrace
+*.dmp
+
+# Unity cloud / addressables cache
+[Aa]sset[Ss]tore/
+*.addressables
+*.apk
+*.aab
+
+# Build artifacts (common)
+*.unitypackage
+*.zip
+*.7z
+*.tar
+*.rar
+
+# If you’ve got a nested sample project dir, keep ignoring its caches too
+**/Library/
+**/Temp/
+**/Obj/
+**/Build*/
+**/Logs/
+**/UserSettings/
