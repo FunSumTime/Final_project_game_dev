@@ -7,10 +7,23 @@ public class PlayerStats : MonoBehaviour
     public float baseDamage = 10f;
     public float armor = 0f;
     public UIManager uiManager;
+    public bool isBlocking = false;
+    public float blockReduction = 0.7f;
 
     Animator anim;
     bool isDead = false;
     public bool IsDead => isDead;
+    [Header("Ult")]
+    public float ultMax = 100f;
+    public float ultCurrent = 0f;
+    public float ultGainPerKill = 25f;
+
+    public void AddUltCharge(float amount)
+    {
+        ultCurrent = Mathf.Clamp(ultCurrent + amount, 0f, ultMax);
+        uiManager?.SetUlt(ultCurrent, ultMax);
+    }
+
 
     void Start()
     {
@@ -24,7 +37,17 @@ public class PlayerStats : MonoBehaviour
     {
         if (isDead) return;
 
-        float finalDamage = Mathf.Max(0f, amount - armor);
+        float finalDamage = amount;
+
+        // armor
+        finalDamage = Mathf.Max(0f, finalDamage - armor);
+
+        // block reduction
+        if (isBlocking)
+        {
+            finalDamage *= (1f - blockReduction);  // e.g. 30% of original
+        }
+
         currentHealth -= finalDamage;
         currentHealth = Mathf.Max(0f, currentHealth);
 
@@ -35,6 +58,7 @@ public class PlayerStats : MonoBehaviour
             Die();
         }
     }
+
 
     void Die()
     {

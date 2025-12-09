@@ -11,6 +11,8 @@ public class EnemyStats : MonoBehaviour
 
     float currentHealth;
     bool isDead = false;
+    public bool IsDead => isDead;
+
     Animator anim;
     EnemyAI ai;
 
@@ -19,6 +21,13 @@ public class EnemyStats : MonoBehaviour
         currentHealth = maxHealth;
         anim = GetComponent<Animator>();
         ai = GetComponent<EnemyAI>();
+
+        // Hook the hitbox back to this enemy
+        EnemyHitbox hb = GetComponentInChildren<EnemyHitbox>();
+        if (hb != null)
+        {
+            hb.owner = this;
+        }
     }
 
     public void TakeDamage(float amount)
@@ -26,6 +35,8 @@ public class EnemyStats : MonoBehaviour
         if (isDead) return;
 
         currentHealth -= amount;
+        Debug.Log($"Enemy {gameObject.name} took {amount} damage. HP now: {currentHealth}/{maxHealth}");
+
         if (currentHealth <= 0f)
         {
             currentHealth = 0f;
@@ -44,19 +55,20 @@ public class EnemyStats : MonoBehaviour
             anim.SetFloat("Speed", 0f);
         }
 
-        // stop AI movement/attacks
         if (ai != null)
         {
             ai.enabled = false;
         }
 
-        // tell WaveManager
         if (waveManager != null)
         {
             waveManager.OnEnemyKilled(goldReward);
         }
+        if (waveManager != null && waveManager.playerStats != null)
+        {
+            waveManager.playerStats.AddUltCharge(waveManager.playerStats.ultGainPerKill);
+        }
 
-        // destroy after animation finishes
         Destroy(gameObject, 3f);
     }
 }

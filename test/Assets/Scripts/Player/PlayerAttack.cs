@@ -5,7 +5,8 @@ public class PlayerAttack : MonoBehaviour
 {
     public SwordHitbox swordHitbox;
     public float attackCooldown = 0.6f;
-    public float hitboxDuration = 0.25f;
+    public float hitboxStart = 0.1f;   // when in the anim the blade is "in front"
+    public float hitboxDuration = 0.35f;
 
     Animator anim;
     bool canAttack = true;
@@ -27,22 +28,16 @@ public class PlayerAttack : MonoBehaviour
     {
         canAttack = false;
 
-        if (anim != null)
-        {
-            anim.SetTrigger("Attack");   // uses the Trigger we created
-        }
+        anim?.SetTrigger("Attack");
 
-        if (swordHitbox != null)
-        {
-            swordHitbox.isActive = true;
-        }
+        // small delay before the hit starts, so it lines up with the swing
+        yield return new WaitForSeconds(hitboxStart);
+
+        if (swordHitbox != null) swordHitbox.BeginSwing();
 
         yield return new WaitForSeconds(hitboxDuration);
 
-        if (swordHitbox != null)
-        {
-            swordHitbox.isActive = false;
-        }
+        if (swordHitbox != null) swordHitbox.EndSwing();
 
         yield return new WaitForSeconds(attackCooldown);
         canAttack = true;

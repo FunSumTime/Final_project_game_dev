@@ -1,21 +1,32 @@
+using System.Collections;
 using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
 public class EnemyAI : MonoBehaviour
 {
-    public Transform target;          // player transform
+    [Header("Targets")]
+    public Transform playerTarget;
+    public Transform castleTarget;
+    public float playerChaseRadius = 8f;
+
+    [Header("Movement")]
     public float moveSpeed = 3f;
-    public float attackDistance = 2f;
-    public float timeBetweenAttacks = 1.0f;
-    public float attackDamage = 5f;
-    public PlayerStats playerStats;
+    public float attackDistance = 3f;
+
+    [Header("Attack timing")]
+    public float attackWindup = 0.2f;
+    public float attackActiveTime = 0.3f;
+    public float attackCooldown = 0.8f;
+
+    [Header("Hitbox")]
+    public EnemyHitbox punchHitbox;
 
     CharacterController controller;
     Animator anim;
 
     float gravity = -9.81f;
     float verticalVelocity = 0f;
-    float attackTimer = 0f;
+    bool isAttacking = false;
 
     void Awake()
     {
@@ -25,9 +36,7 @@ public class EnemyAI : MonoBehaviour
 
     void Update()
     {
-        if (target == null) return;
-
-        // basic gravity
+        // gravity
         if (controller.isGrounded && verticalVelocity < 0f)
         {
             verticalVelocity = -1f;
@@ -37,68 +46,101 @@ public class EnemyAI : MonoBehaviour
             verticalVelocity += gravity * Time.deltaTime;
         }
 
-        Vector3 toTarget = target.position - transform.position;
+        if (isAttacking)
+        {
+            Vector3 fallOnly = new Vector3(0f, verticalVelocity, 0f);
+            controller.Move(fallOnly * Time.deltaTime);
+            return;
+        }
+
+        Transform currentTarget = GetCurrentTarget();
+        if (currentTarget == null) return;
+
+        Vector3 toTarget = currentTarget.position - transform.position;
         toTarget.y = 0f;
         float dist = toTarget.magnitude;
 
-        Vector3 horizontalMove = Vector3.zero;
-        float speedValue = 0f;
+        Vector3 move = Vector3.zero;
+        float speedParam = 0f;
 
         if (dist > attackDistance)
         {
-            // move toward player
             Vector3 dir = toTarget.normalized;
-            horizontalMove = dir * moveSpeed;
-            speedValue = 1f; // “moving”
+            move = dir * moveSpeed;
+            speedParam = 1f;
 
-            // rotate toward player
             if (dir.sqrMagnitude > 0.001f)
             {
                 transform.rotation = Quaternion.LookRotation(dir);
             }
-
-            attackTimer = 0f; // reset
         }
         else
         {
-            // in attack range
-            horizontalMove = Vector3.zero;
-            speedValue = 0f;
-
-            attackTimer -= Time.deltaTime;
-            if (attackTimer <= 0f)
+            if (!isAttacking)
             {
-                DoAttack();
-                attackTimer = timeBetweenAttacks;
+                StartCoroutine(AttackRoutine());
             }
         }
 
-        // apply animation Speed
         if (anim != null)
         {
-            anim.SetFloat("Speed", speedValue);
+            anim.SetFloat("Speed", speedParam);
         }
 
-        Vector3 velocity = horizontalMove;
-        velocity.y = verticalVelocity;
-        controller.Move(velocity * Time.deltaTime);
+        move.y = verticalVelocity;
+        controller.Move(move * Time.deltaTime);
     }
 
-    void DoAttack()
+    Transform GetCurrentTarget()
     {
+        // If player is alive and within radius, prefer him
+        if (playerTarget != null)
+        {
+            float distToPlayer = Vector3.Distance(transform.position, playerTarget.position);
+            PlayerStats ps = playerTarget.GetComponent<PlayerStats>();
+            bool playerAlive = (ps == null || !ps.IsDead);
+
+            if (playerAlive && distToPlayer <= playerChaseRadius)
+            {
+                return playerTarget;
+            }
+        }
+
+        // Otherwise walk toward castle
+        if (castleTarget != null)
+        {
+            return castleTarget;
+        }
+
+        return null;
+    }
+
+
+    IEnumerator AttackRoutine()
+    {
+        isAttacking = true;
+
         if (anim != null)
         {
             anim.SetTrigger("Attack");
+            Debug.Log("Enemy starting ATTACK routine");
+
         }
 
-        if (playerStats != null)
-        {
-            // simple distance check to avoid weirdness
-            float dist = Vector3.Distance(transform.position, playerStats.transform.position);
-            if (dist <= attackDistance + 0.5f)
-            {
-                playerStats.TakeDamage(attackDamage);
-            }
-        }
+        // windup
+        yield return new WaitForSeconds(attackWindup);
+
+        // hitbox on
+        if (punchHitbox != null) punchHitbox.isActive = true;
+
+        yield return new WaitForSeconds(attackActiveTime);
+
+        // hitbox off
+        if (punchHitbox != null) punchHitbox.isActive = false;
+
+        // cooldown
+        yield return new WaitForSeconds(attackCooldown);
+
+        isAttacking = false;
     }
 }

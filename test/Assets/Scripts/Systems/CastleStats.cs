@@ -2,37 +2,36 @@ using UnityEngine;
 
 public class CastleStats : MonoBehaviour
 {
-    [Header("Health")]
-    public float maxHealth = 200f;
+    public float maxHealth = 500f;
     public float currentHealth;
-
-    [Header("References")]
     public UIManager uiManager;
 
-    bool isDestroyed = false;
+    AudioSource audioSource;
 
     void Start()
     {
         currentHealth = maxHealth;
+        audioSource = GetComponent<AudioSource>();
+
+        Debug.Log("CastleStats Start on: " + gameObject.name);
+
         if (uiManager != null)
         {
             uiManager.SetCastleHealth(currentHealth, maxHealth);
         }
     }
-    void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.J))
-        {
-            TakeDamage(20f);
-        }
-    }
 
     public void TakeDamage(float amount)
     {
-        if (isDestroyed) return;
-
         currentHealth -= amount;
-        if (currentHealth < 0f) currentHealth = 0f;
+        currentHealth = Mathf.Max(0f, currentHealth);
+
+        Debug.Log($"Castle hit! Took {amount}, HP: {currentHealth}/{maxHealth}");
+
+        if (audioSource != null && audioSource.clip != null)
+        {
+            audioSource.PlayOneShot(audioSource.clip);
+        }
 
         if (uiManager != null)
         {
@@ -41,9 +40,12 @@ public class CastleStats : MonoBehaviour
 
         if (currentHealth <= 0f)
         {
-            isDestroyed = true;
-            Debug.Log("CASTLE DESTROYED!");
-            // TODO: talk to GameManager / show Game Over later
+            OnCastleDestroyed();
         }
+    }
+
+    void OnCastleDestroyed()
+    {
+        Debug.Log("Castle destroyed! TODO: show Game Over UI");
     }
 }

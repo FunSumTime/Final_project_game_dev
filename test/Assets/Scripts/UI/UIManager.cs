@@ -1,5 +1,7 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
+
 
 public class UIManager : MonoBehaviour
 {
@@ -19,6 +21,17 @@ public class UIManager : MonoBehaviour
     [Header("Weapon Info")]
     public TextMeshProUGUI weaponInfoText;
 
+    public Image ultFill;
+
+    public void SetUlt(float current, float max)
+    {
+        if (ultFill != null)
+        {
+            ultFill.fillAmount = current / max;
+        }
+    }
+
+
 
     public void SetPlayerHealth(float current, float max)
     {
@@ -32,7 +45,10 @@ public class UIManager : MonoBehaviour
 
     public void SetWave(int waveNumber)
     {
-        waveText.text = $"Wave {waveNumber}";
+        if (waveText != null)
+        {
+            waveText.text = "Wave: " + waveNumber;
+        }
     }
 
     public void SetEnemiesRemaining(int count)

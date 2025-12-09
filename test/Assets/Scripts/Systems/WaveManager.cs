@@ -9,10 +9,16 @@ public class WaveManager : MonoBehaviour
     [Header("References")]
     public UIManager uiManager;
     public PlayerStats playerStats;
+    public CastleStats castleStats;
+
 
     int currentWave = 1;
     int enemiesAlive = 0;
     int gold = 0;
+    [Header("Difficulty")]
+    public float enemyHealthPerWave = 1.2f;  // 20% more health per wave
+    public float enemyDamagePerWave = 1.1f;  // 10% more damage per wave
+
     public int CurrentGold => gold;  
     void Start()
     {
@@ -28,29 +34,64 @@ public class WaveManager : MonoBehaviour
 
     void StartWave(int waveNumber)
     {
-        int enemiesToSpawn = 5 + (waveNumber - 1) * 2; // simple scaling
-
-        enemiesAlive = enemiesToSpawn;
-        uiManager.SetEnemiesRemaining(enemiesAlive);
-        uiManager.SetWave(waveNumber);
-
-        for (int i = 0; i < enemiesToSpawn; i++)
+        enemiesAlive =  5 + (waveNumber - 1)* 2;
+        if (uiManager != null)
         {
-            Transform spawn = spawnPoints[Random.Range(0, spawnPoints.Length)];
+            uiManager.SetWave(currentWave);
+        }
 
-            EnemyStats enemy = Instantiate(enemyPrefab, spawn.position, spawn.rotation);
 
-            // hook references
+        for (int i = 0; i < enemiesAlive; i++)
+        {
+            Transform spawnPoint = spawnPoints[Random.Range(0, spawnPoints.Length)];
+            Vector3 spawnPos = GetFreeSpawnPosition(spawnPoint.position);
+
+            EnemyStats enemy = Instantiate(enemyPrefab, spawnPos, spawnPoint.rotation);
             enemy.waveManager = this;
+
+
+            // scale enemy stats with wave
+            float healthMultiplier = Mathf.Pow(enemyHealthPerWave, waveNumber - 1);
+            enemy.maxHealth *= healthMultiplier;
+
+
+            EnemyHitbox hb = enemy.GetComponentInChildren<EnemyHitbox>();
+            if (hb != null)
+            {
+                float dmgMult = Mathf.Pow(enemyDamagePerWave, waveNumber - 1);
+                hb.damageToPlayer *= dmgMult;
+            }
 
             EnemyAI ai = enemy.GetComponent<EnemyAI>();
             if (ai != null)
             {
-                ai.target = playerStats.transform;
-                ai.playerStats = playerStats;
+                ai.playerTarget = playerStats.transform;
+                ai.castleTarget = castleStats.transform;
             }
         }
     }
+
+    Vector3 GetFreeSpawnPosition(Vector3 basePos)
+    {
+        const float radius = 1.5f;
+        const int maxTries = 8;
+
+        for (int i = 0; i < maxTries; i++)
+        {
+            Vector2 offset2D = Random.insideUnitCircle * radius;
+            Vector3 pos = basePos + new Vector3(offset2D.x, 0f, offset2D.y);
+
+            // check if another enemy is already here
+            bool blocked = Physics.CheckSphere(pos, 0.8f, LayerMask.GetMask("enemy"));
+            if (!blocked)
+            {
+                return pos;
+            }
+        }
+
+        return basePos;
+    }
+
 
     public void OnEnemyKilled(int goldReward)
     {
